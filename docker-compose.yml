@@ -6,6 +6,10 @@ services:
     # build: .
     container_name: dissuasore-piccioni
     restart: unless-stopped
+    # Solo se il container si chiude con "PermissionError: Operation not permitted"
+    # (Raspberry Pi OS a 32 bit con Docker/libseccomp2 vecchi): togli il commento.
+    # security_opt:
+    #   - seccomp:unconfined
     ports:
       - "8080:8080"
     devices:
