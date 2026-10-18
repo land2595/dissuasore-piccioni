@@ -86,6 +86,7 @@
     </div>
     <div class="row">
       <button class="primary" id="btnRandom">▶ Riproduci verso casuale</button>
+      <button id="btnSession">⏱ Avvia sessione ora</button>
       <button id="btnStop">■ Stop</button>
       <button id="btnToggle">…</button>
     </div>
@@ -135,9 +136,17 @@
       <div class="days" id="days"></div>
 
       <div class="grid2" style="margin-top:14px">
-        <label class="f">Intervallo minimo tra i versi (minuti)
+        <label class="f">Durata sessione: minimo (minuti, 0 = un solo verso)
+          <input type="number" id="sessMin" min="0" step="0.5" required></label>
+        <label class="f">Durata sessione: massimo (minuti, 0 = un solo verso)
+          <input type="number" id="sessMax" min="0" step="0.5" required></label>
+        <label class="f">Pausa tra i versi nella sessione: minimo (secondi)
+          <input type="number" id="gapMin" min="1" step="1" required></label>
+        <label class="f">Pausa tra i versi nella sessione: massimo (secondi)
+          <input type="number" id="gapMax" min="1" step="1" required></label>
+        <label class="f">Pausa tra le sessioni: minimo (minuti)
           <input type="number" id="minInt" min="0.1" step="0.1" required></label>
-        <label class="f">Intervallo massimo tra i versi (minuti)
+        <label class="f">Pausa tra le sessioni: massimo (minuti)
           <input type="number" id="maxInt" min="0.1" step="0.1" required></label>
         <label class="f">Volume: <span id="volLabel"></span>
           <input type="range" id="volume" min="0" max="100"></label>
@@ -206,9 +215,14 @@ async function loadStatus() {
   $("host").textContent = status.hostname;
   const pill = $("pill");
   let text = "";
+  const fmtClock = (ts) => new Date(ts * 1000).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  const sess = status.in_session && status.session_end ? ` Sessione fino alle ${fmtClock(status.session_end)}.` : "";
   if (status.playing) {
     pill.className = "pill ok"; pill.textContent = "In riproduzione";
-    text = `${status.playing.sound} (${status.playing.trigger})`;
+    text = `${status.playing.sound} (${status.playing.trigger}).${sess}`;
+  } else if (status.in_session) {
+    pill.className = "pill ok"; pill.textContent = "Sessione in corso";
+    text = (status.next_play_at ? `Prossimo verso tra circa ${fmtDur(status.next_play_at - status.server_time)}.` : "") + sess;
   } else if (!status.enabled) {
     pill.className = "pill off"; pill.textContent = "Disattivato";
     text = "La riproduzione automatica è spenta.";
@@ -217,12 +231,13 @@ async function loadStatus() {
     text = "Attivo, in attesa della prossima fascia oraria.";
   } else {
     pill.className = "pill ok"; pill.textContent = "Attivo";
-    text = status.next_play_at ? `Prossimo verso tra circa ${fmtDur(status.next_play_at - status.server_time)}` : "In preparazione…";
+    text = status.next_play_at ? `Prossima sessione tra circa ${fmtDur(status.next_play_at - status.server_time)}` : "In preparazione…";
   }
   if (status.sound_count === 0) text += " Nessun suono caricato.";
   $("statusText").textContent = text;
   $("btnToggle").textContent = status.enabled ? "Disattiva automatico" : "Attiva automatico";
-  $("btnStop").disabled = !status.playing;
+  $("btnStop").disabled = !status.playing && !status.in_session;
+  $("btnSession").disabled = status.in_session || status.sound_count === 0;
   $("btnRandom").disabled = !!status.playing || status.sound_count === 0;
 
   const st = status.stats;
@@ -314,6 +329,10 @@ async function loadConfig() {
   renderWindows();
   $("days").innerHTML = DAYS.map((d, i) =>
     `<label><input type="checkbox" value="${i}" ${config.days.includes(i) ? "checked" : ""}>${d}</label>`).join("");
+  $("sessMin").value = +(config.session_min_sec / 60).toFixed(2);
+  $("sessMax").value = +(config.session_max_sec / 60).toFixed(2);
+  $("gapMin").value = config.gap_min_sec;
+  $("gapMax").value = config.gap_max_sec;
   $("minInt").value = +(config.min_interval_sec / 60).toFixed(2);
   $("maxInt").value = +(config.max_interval_sec / 60).toFixed(2);
   $("volume").value = config.volume; $("volLabel").textContent = config.volume + "%";
@@ -329,6 +348,10 @@ $("cfgForm").addEventListener("submit", async (e) => {
   const body = {
     windows: config.windows,
     days: [...$("days").querySelectorAll("input:checked")].map(x => +x.value),
+    session_min_sec: Math.round(+$("sessMin").value * 60),
+    session_max_sec: Math.round(+$("sessMax").value * 60),
+    gap_min_sec: Math.round(+$("gapMin").value),
+    gap_max_sec: Math.round(+$("gapMax").value),
     min_interval_sec: Math.round(+$("minInt").value * 60),
     max_interval_sec: Math.round(+$("maxInt").value * 60),
     volume: +$("volume").value,
@@ -357,6 +380,10 @@ $("btnDevices").onclick = async () => {
 // --- comandi ---
 $("btnRandom").onclick = async () => {
   try { const r = await api("/api/play", jsonOpts("POST", {})); toast("In riproduzione: " + r.sound); loadStatus(); }
+  catch (err) { toast(err.message); }
+};
+$("btnSession").onclick = async () => {
+  try { await api("/api/session/start", { method: "POST" }); toast("Sessione avviata"); setTimeout(refresh, 500); }
   catch (err) { toast(err.message); }
 };
 $("btnStop").onclick = async () => { await api("/api/stop", { method: "POST" }); setTimeout(refresh, 300); };

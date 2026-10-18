@@ -125,7 +125,19 @@ def play(req: PlayRequest):
 
 @app.post("/api/stop")
 def stop():
-    return {"stopped": player.stop()}
+    """Ferma il verso in corso e chiude l'eventuale sessione."""
+    in_session = scheduler.in_session
+    if in_session:
+        scheduler.end_session()
+    return {"stopped": player.stop() or in_session}
+
+
+@app.post("/api/session/start")
+def start_session():
+    if not player.pick_random():
+        raise HTTPException(400, "Nessun suono disponibile")
+    scheduler.start_session_now()
+    return {"ok": True}
 
 
 @app.post("/api/test-audio")
@@ -271,6 +283,10 @@ class ConfigIn(BaseModel):
     days: list[int] | None = None
     min_interval_sec: int | None = None
     max_interval_sec: int | None = None
+    session_min_sec: int | None = None
+    session_max_sec: int | None = None
+    gap_min_sec: int | None = None
+    gap_max_sec: int | None = None
     volume: int | None = None
     audio_device: str | None = None
     mixer_control: str | None = None
@@ -297,7 +313,11 @@ def put_config(body: ConfigIn):
         changes["volume"] = max(0, min(100, changes["volume"]))
     cfg = {**store.get_config(), **changes}
     if cfg["min_interval_sec"] < 5 or cfg["max_interval_sec"] < cfg["min_interval_sec"]:
-        raise HTTPException(400, "Intervallo non valido: minimo ≥ 5 s e massimo ≥ minimo")
+        raise HTTPException(400, "Pausa non valida: minimo ≥ 5 s e massimo ≥ minimo")
+    if cfg["session_min_sec"] < 0 or cfg["session_max_sec"] < cfg["session_min_sec"]:
+        raise HTTPException(400, "Durata sessione non valida: massimo ≥ minimo")
+    if cfg["gap_min_sec"] < 1 or cfg["gap_max_sec"] < cfg["gap_min_sec"]:
+        raise HTTPException(400, "Pausa tra i versi non valida: minimo ≥ 1 s e massimo ≥ minimo")
     cfg = store.update_config(changes)
     scheduler.reschedule()
     return cfg

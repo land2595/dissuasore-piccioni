@@ -7,10 +7,11 @@ App Docker per Raspberry Pi che riproduce versi di uccelli predatori (falco pell
 - **Stato**: attivo / fuori orario / disattivato, tempo al prossimo verso, cosa sta suonando.
 - **Comandi**: riproduci un verso casuale, ferma, attiva/disattiva il funzionamento automatico.
 - **Versi**: elenco, anteprima nel browser, riproduzione sulle cuffie del Pi, caricamento (trascina e rilascia, mp3/wav/ogg), eliminazione, esclusione temporanea di un verso.
-- **Programmazione**: più fasce orarie (anche a cavallo della mezzanotte), giorni della settimana, intervallo casuale minimo/massimo, volume, durata massima di un verso.
+- **Sessioni di disturbo**: per alcuni minuti (es. 5-10) suonano versi diversi a pause casuali (es. 20-60 s), come un predatore che gira nei dintorni; poi una pausa lunga casuale (es. 30-90 min) prima della sessione successiva. Il pulsante **Avvia sessione ora** ne fa partire una subito; con durata sessione 0 suona un solo verso alla volta.
+- **Programmazione**: più fasce orarie (anche a cavallo della mezzanotte), giorni della settimana, volume, durata massima di un verso.
 - **Registro e statistiche**: ultime riproduzioni con esito ed eventuali errori, conteggi di oggi / 7 giorni / totale, grafico per ora del giorno, quante volte è stato usato ogni verso.
 
-Lo stesso verso non viene mai ripetuto due volte di fila e l'intervallo è casuale: i piccioni si abituano in fretta ai suoni regolari.
+Lo stesso verso non viene mai ripetuto due volte di fila e tutte le pause sono casuali: i piccioni si abituano in fretta ai suoni regolari. Concentra le fasce orarie nei momenti in cui arrivano (di solito l'alba) e usa un altoparlante amplificato: le cuffie all'aperto si sentono appena.
 
 ## Requisiti
 
@@ -109,7 +110,8 @@ L'interfaccia usa un'API JSON che puoi chiamare anche da Home Assistant o da scr
 
 - `GET /api/status`: stato e statistiche
 - `POST /api/play` con `{"name": "falco.mp3"}` oppure `{}` per un verso casuale
-- `POST /api/stop`
+- `POST /api/stop` (ferma anche la sessione in corso)
+- `POST /api/session/start`
 - `GET /api/sounds`, `POST /api/sounds` (multipart, campo `files`), `POST /api/sounds/from-url` con `{"url": "..."}`, `DELETE /api/sounds/{nome}`
 - `GET /api/config`, `PUT /api/config` (per esempio `{"enabled": false}`)
 - `GET /api/log`
