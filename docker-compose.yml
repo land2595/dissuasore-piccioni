@@ -1,7 +1,9 @@
 services:
   dissuasore:
-    build: .
-    image: dissuasore-piccioni:latest
+    # Immagine pronta costruita da GitHub Actions (arm/v7, arm64, amd64).
+    # Per costruirla in locale sul Pi: commenta "image" e togli il commento a "build".
+    image: ghcr.io/land2595/dissuasore-piccioni:latest
+    # build: .
     container_name: dissuasore-piccioni
     restart: unless-stopped
     ports:

@@ -24,16 +24,22 @@ Lo stesso verso non viene mai ripetuto due volte di fila e l'intervallo è casua
 
 ## Installazione
 
-1. Copia la cartella `dissuasore-piccioni` sul Pi (per esempio con `scp -r dissuasore-piccioni pi@<ip-del-pi>:~`).
-2. Sul Pi:
+L'immagine Docker viene costruita automaticamente da GitHub Actions a ogni modifica su `main` e pubblicata su GitHub Packages come `ghcr.io/land2595/dissuasore-piccioni:latest` (per Raspberry Pi a 32 e 64 bit e per PC). Sul Pi non serve compilare nulla.
+
+1. Sul Pi scarica solo il file di avvio e avvia:
 
    ```bash
-   cd ~/dissuasore-piccioni
-   docker compose up -d --build
+   mkdir -p ~/dissuasore-piccioni && cd ~/dissuasore-piccioni
+   curl -fsSLO https://raw.githubusercontent.com/land2595/dissuasore-piccioni/main/docker-compose.yml
+   docker compose up -d
    ```
 
-   La prima build sul Pi 3 richiede qualche minuto.
-3. Apri `http://<ip-del-pi>:8080` dal telefono o dal PC.
+   (Oppure clona l'intero repository con `git clone`.)
+2. Apri `http://<ip-del-pi>:8080` dal telefono o dal PC.
+
+Se il repository o il pacchetto sono privati, prima fai `docker login ghcr.io -u land2595` usando come password un token GitHub con permesso `read:packages`; in alternativa rendi pubblico il pacchetto da GitHub → profilo → *Packages* → *dissuasore-piccioni* → *Package settings*. Per i file privati anche il `curl` richiede autenticazione: in quel caso usa `git clone`.
+
+Per costruire l'immagine direttamente sul Pi, in `docker-compose.yml` commenta `image:`, togli il commento a `build: .` e usa `docker compose up -d --build`.
 
 Suoni, impostazioni e registro sono salvati in `./data` e sopravvivono a riavvii e aggiornamenti. Il container riparte da solo all'accensione del Pi (`restart: unless-stopped`).
 
@@ -76,7 +82,7 @@ In `docker-compose.yml` togli il commento a `WEB_USER` e `WEB_PASSWORD`, scegli 
 docker compose logs -f          # log in tempo reale
 docker compose restart          # riavvio
 docker compose down             # arresto
-docker compose up -d --build    # aggiornamento dopo aver modificato i file
+docker compose pull && docker compose up -d   # aggiorna all'ultima versione
 ```
 
 ## Variabili d'ambiente
