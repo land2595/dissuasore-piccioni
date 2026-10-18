@@ -1,0 +1,112 @@
+# 🦅 Dissuasore piccioni
+
+App Docker per Raspberry Pi che riproduce versi di uccelli predatori (falco, poiana, gufo…) dall'uscita cuffie, a intervalli casuali e nelle fasce orarie che scegli. Si controlla da un'interfaccia web.
+
+## Cosa fa
+
+- **Stato**: attivo / fuori orario / disattivato, tempo al prossimo verso, cosa sta suonando.
+- **Comandi**: riproduci un verso casuale, ferma, attiva/disattiva il funzionamento automatico.
+- **Versi**: elenco, anteprima nel browser, riproduzione sulle cuffie del Pi, caricamento (trascina e rilascia, mp3/wav/ogg), eliminazione, esclusione temporanea di un verso.
+- **Programmazione**: più fasce orarie (anche a cavallo della mezzanotte), giorni della settimana, intervallo casuale minimo/massimo, volume, durata massima di un verso.
+- **Registro e statistiche**: ultime riproduzioni con esito ed eventuali errori, conteggi di oggi / 7 giorni / totale, grafico per ora del giorno, quante volte è stato usato ogni verso.
+
+Lo stesso verso non viene mai ripetuto due volte di fila e l'intervallo è casuale: i piccioni si abituano in fretta ai suoni regolari.
+
+## Requisiti
+
+- Raspberry Pi 3 con Raspberry Pi OS (32 o 64 bit), cuffie o altoparlante nel jack audio.
+- Docker con il plugin compose:
+
+  ```bash
+  curl -fsSL https://get.docker.com | sh
+  sudo usermod -aG docker $USER   # poi esci e rientra
+  ```
+
+## Installazione
+
+1. Copia la cartella `dissuasore-piccioni` sul Pi (per esempio con `scp -r dissuasore-piccioni pi@<ip-del-pi>:~`).
+2. Sul Pi:
+
+   ```bash
+   cd ~/dissuasore-piccioni
+   docker compose up -d --build
+   ```
+
+   La prima build sul Pi 3 richiede qualche minuto.
+3. Apri `http://<ip-del-pi>:8080` dal telefono o dal PC.
+
+Suoni, impostazioni e registro sono salvati in `./data` e sopravvivono a riavvii e aggiornamenti. Il container riparte da solo all'accensione del Pi (`restart: unless-stopped`).
+
+## Configurare l'audio
+
+Le impostazioni predefinite puntano al jack cuffie del Pi:
+
+| Campo | Valore predefinito |
+|---|---|
+| Dispositivo ALSA | `plughw:CARD=Headphones,DEV=0` |
+| Controllo mixer | `PCM` |
+| Scheda mixer | `Headphones` |
+
+Per verificarle:
+
+1. Nella sezione **Impostazioni** premi **🔊 Prova audio**: deve sentirsi un beep di un secondo.
+2. Se non senti nulla, premi **Mostra dispositivi audio** e cerca la riga con `Headphones` (o `bcm2835`). Inserisci il nome mostrato nella forma `plughw:CARD=<nome>,DEV=0`, salva e riprova.
+3. Se compare "volume non impostato", controlla il nome del controllo mixer sul Pi con `amixer -c Headphones scontrols` (di solito `PCM` oppure `Headphone`).
+
+Verifiche dal terminale del Pi, fuori da Docker:
+
+```bash
+aplay -l                                   # elenca le schede audio
+speaker-test -D plughw:CARD=Headphones,DEV=0 -c 2 -t wav -l 1
+```
+
+Se l'audio esce dall'HDMI invece che dalle cuffie, usa `sudo raspi-config` → *System Options* → *Audio* e scegli *Headphones*. L'app comunque usa il dispositivo indicato nelle impostazioni.
+
+## Dove trovare i versi
+
+Cerca registrazioni di falco pellegrino, poiana, astore, gufo reale o gabbiano reale su siti con licenze libere, ad esempio [xeno-canto.org](https://xeno-canto.org) (controlla la licenza di ogni file) o Freesound. File brevi (5-20 secondi) e diversi tra loro funzionano meglio.
+
+## Protezione con password
+
+In `docker-compose.yml` togli il commento a `WEB_USER` e `WEB_PASSWORD`, scegli le credenziali e riavvia con `docker compose up -d`. Il browser chiederà utente e password. Non esporre la porta 8080 su Internet senza password.
+
+## Comandi utili
+
+```bash
+docker compose logs -f          # log in tempo reale
+docker compose restart          # riavvio
+docker compose down             # arresto
+docker compose up -d --build    # aggiornamento dopo aver modificato i file
+```
+
+## Variabili d'ambiente
+
+| Variabile | Default | Significato |
+|---|---|---|
+| `TZ` | `Europe/Rome` | Fuso orario delle fasce orarie |
+| `WEB_USER` / `WEB_PASSWORD` | vuote | Attivano la password sull'interfaccia |
+| `MAX_UPLOAD_MB` | `20` | Dimensione massima di un file caricato |
+| `DISSUASORE_DRY_RUN` | `0` | Con `1` simula la riproduzione (per provare l'app su un PC senza audio) |
+
+## API
+
+L'interfaccia usa un'API JSON che puoi chiamare anche da Home Assistant o da script:
+
+- `GET /api/status`: stato e statistiche
+- `POST /api/play` con `{"name": "falco.mp3"}` oppure `{}` per un verso casuale
+- `POST /api/stop`
+- `GET /api/sounds`, `POST /api/sounds` (multipart, campo `files`), `DELETE /api/sounds/{nome}`
+- `GET /api/config`, `PUT /api/config` (per esempio `{"enabled": false}`)
+- `GET /api/log`
+
+Documentazione interattiva completa su `http://<ip-del-pi>:8080/docs`.
+
+## Struttura
+
+```
+app/main.py        API web
+app/player.py      riproduzione (aplay per wav, mpg123 per mp3, ogg123 per ogg) e volume (amixer)
+app/scheduler.py   programmazione casuale nelle fasce orarie
+app/store.py       impostazioni (data/config.json) e registro (data/log.db)
+app/static/        interfaccia web
+```

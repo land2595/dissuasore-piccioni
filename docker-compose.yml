@@ -1,0 +1,20 @@
+services:
+  dissuasore:
+    build: .
+    image: dissuasore-piccioni:latest
+    container_name: dissuasore-piccioni
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    devices:
+      - /dev/snd:/dev/snd        # accesso all'uscita audio (jack delle cuffie)
+    group_add:
+      - audio
+    volumes:
+      - ./data:/data              # suoni, impostazioni e registro restano qui
+    environment:
+      - TZ=Europe/Rome            # le fasce orarie usano questo fuso
+      # Protezione con password (facoltativa): togli il commento e scegli le credenziali
+      # - WEB_USER=admin
+      # - WEB_PASSWORD=cambiami
+      # - MAX_UPLOAD_MB=20

@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dissuasore piccioni</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦅</text></svg>">
+<style>
+  :root {
+    --bg: #f4f5f2; --card: #ffffff; --text: #1d2420; --muted: #66706a; --border: #dde1dc;
+    --accent: #2f6f4f; --accent-text: #fff; --danger: #b3261e; --warn: #9a6700; --ok: #1f7a3a;
+    --bar: #2f6f4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141816; --card: #1d2320; --text: #e6ebe7; --muted: #9aa59e; --border: #2e3631;
+      --accent: #5fb487; --accent-text: #0d1a13; --danger: #f2817a; --warn: #e3b341; --ok: #6fd391;
+      --bar: #5fb487;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 16px; max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 20px; margin: 0; flex: 1; }
+  main { max-width: 960px; margin: 0 auto; padding: 0 16px 40px; display: grid; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .card h2 { font-size: 16px; margin: 0 0 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+  .tile { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .tile .v { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tile .l { color: var(--muted); font-size: 13px; }
+  button, .btn { font: inherit; border-radius: 8px; border: 1px solid var(--border); background: var(--card);
+         color: var(--text); padding: 8px 14px; cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.danger { color: var(--danger); }
+  button:disabled { opacity: .5; cursor: default; }
+  button.small { padding: 4px 10px; font-size: 13px; }
+  input, select { font: inherit; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border);
+         background: var(--bg); color: var(--text); }
+  input[type=range] { padding: 0; width: 100%; }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+  label.f { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  label.f > input, label.f > select { color: var(--text); font-size: 15px; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;
+          border: 1px solid currentColor; }
+  .pill.ok { color: var(--ok); } .pill.warn { color: var(--warn); } .pill.off { color: var(--muted); }
+  .muted { color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; }
+  .sounds td.name { word-break: break-all; }
+  .sounds audio { height: 32px; max-width: 220px; }
+  .drop { border: 2px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center; color: var(--muted); }
+  .drop.over { border-color: var(--accent); color: var(--accent); }
+  .chart { display: flex; align-items: flex-end; gap: 3px; height: 80px; margin-top: 12px; }
+  .chart div { flex: 1; background: var(--bar); border-radius: 3px 3px 0 0; min-height: 2px; opacity: .85; }
+  .chart-l { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+  .days { display: flex; flex-wrap: wrap; gap: 10px; }
+  .days label { display: flex; gap: 4px; align-items: center; }
+  .windows .row { margin-bottom: 6px; }
+  pre { white-space: pre-wrap; font-size: 12px; background: var(--bg); padding: 10px; border-radius: 8px; max-height: 260px; overflow: auto; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+           padding: 10px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; }
+  #toast.show { opacity: 1; }
+  .err { color: var(--danger); }
+  @media (max-width: 600px) {
+    .sounds .hide-sm { display: none; }
+    .sounds audio { max-width: 140px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🦅 Dissuasore piccioni</h1>
+  <span id="host" class="muted"></span>
+</header>
+<main>
+  <section class="card">
+    <h2>Stato</h2>
+    <div class="row" style="margin-bottom:12px">
+      <span id="pill" class="pill off">…</span>
+      <span id="statusText" class="muted"></span>
+    </div>
+    <div class="row">
+      <button class="primary" id="btnRandom">▶ Riproduci verso casuale</button>
+      <button id="btnStop">■ Stop</button>
+      <button id="btnToggle">…</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Statistiche</h2>
+    <div class="tiles">
+      <div class="tile"><div class="v" id="sToday">–</div><div class="l">Riproduzioni oggi</div></div>
+      <div class="tile"><div class="v" id="sWeek">–</div><div class="l">Ultimi 7 giorni</div></div>
+      <div class="tile"><div class="v" id="sTotal">–</div><div class="l">Totale</div></div>
+      <div class="tile"><div class="v" id="sErr">–</div><div class="l">Errori oggi</div></div>
+    </div>
+    <div class="muted" style="margin-top:14px;font-size:13px">Riproduzioni per ora del giorno (ultimi 7 giorni)</div>
+    <div class="chart" id="chart"></div>
+    <div class="chart-l"><span>0</span><span>6</span><span>12</span><span>18</span><span>23</span></div>
+  </section>
+
+  <section class="card">
+    <h2>Versi dei predatori</h2>
+    <div class="drop" id="drop">
+      Trascina qui i file audio (mp3, wav, ogg) oppure
+      <label class="btn" style="display:inline-block;margin-left:6px">Scegli file
+        <input type="file" id="fileInput" accept=".mp3,.wav,.ogg,audio/*" multiple hidden>
+      </label>
+    </div>
+    <div id="uploadMsg" style="margin-top:8px"></div>
+    <table class="sounds" style="margin-top:8px">
+      <thead><tr><th>Attivo</th><th>Nome</th><th class="hide-sm">Anteprima</th><th class="hide-sm">Volte</th><th></th></tr></thead>
+      <tbody id="soundList"></tbody>
+    </table>
+    <p id="noSounds" class="muted" hidden>Nessun suono caricato. Aggiungi qualche verso di falco, poiana, gufo o gabbiano.</p>
+  </section>
+
+  <section class="card">
+    <h2>Impostazioni</h2>
+    <form id="cfgForm">
+      <div class="muted" style="font-size:13px;margin-bottom:6px">Fasce orarie attive</div>
+      <div class="windows" id="windows"></div>
+      <button type="button" class="small" id="addWindow">+ Aggiungi fascia</button>
+
+      <div class="muted" style="font-size:13px;margin:14px 0 6px">Giorni attivi</div>
+      <div class="days" id="days"></div>
+
+      <div class="grid2" style="margin-top:14px">
+        <label class="f">Intervallo minimo tra i versi (minuti)
+          <input type="number" id="minInt" min="0.1" step="0.1" required></label>
+        <label class="f">Intervallo massimo tra i versi (minuti)
+          <input type="number" id="maxInt" min="0.1" step="0.1" required></label>
+        <label class="f">Volume: <span id="volLabel"></span>
+          <input type="range" id="volume" min="0" max="100"></label>
+        <label class="f">Durata massima di un verso (secondi, 0 = intero)
+          <input type="number" id="maxPlay" min="0" step="1"></label>
+        <label class="f">Dispositivo ALSA
+          <input type="text" id="device" placeholder="default"></label>
+        <label class="f">Controllo mixer (volume)
+          <input type="text" id="mixer" placeholder="PCM"></label>
+        <label class="f">Scheda mixer
+          <input type="text" id="mixerCard" placeholder="0"></label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="primary" type="submit">Salva impostazioni</button>
+        <button type="button" id="btnTest">🔊 Prova audio</button>
+        <button type="button" id="btnDevices">Mostra dispositivi audio</button>
+      </div>
+      <pre id="devices" hidden></pre>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Registro riproduzioni</h2>
+    <table>
+      <thead><tr><th>Quando</th><th>Suono</th><th>Tipo</th><th>Esito</th></tr></thead>
+      <tbody id="log"></tbody>
+    </table>
+    <div class="row" style="margin-top:10px">
+      <button class="small danger" id="btnClearLog">Svuota registro</button>
+    </div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const DAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+let config = null;
+let status = null;
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, opts);
+  let body = null;
+  try { body = await res.json(); } catch {}
+  if (!res.ok) throw new Error((body && body.detail) || res.statusText);
+  return body;
+}
+const jsonOpts = (method, data) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtTime(ts) { return new Date(ts * 1000).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "medium" }); }
+function fmtDur(sec) {
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m ? `${m} min ${s} s` : `${s} s`;
+}
+
+// --- stato ---
+async function loadStatus() {
+  try { status = await api("/api/status"); } catch (e) { $("statusText").textContent = "Non raggiungibile: " + e.message; return; }
+  $("host").textContent = status.hostname;
+  const pill = $("pill");
+  let text = "";
+  if (status.playing) {
+    pill.className = "pill ok"; pill.textContent = "In riproduzione";
+    text = `${status.playing.sound} (${status.playing.trigger})`;
+  } else if (!status.enabled) {
+    pill.className = "pill off"; pill.textContent = "Disattivato";
+    text = "La riproduzione automatica è spenta.";
+  } else if (!status.in_window) {
+    pill.className = "pill warn"; pill.textContent = "Fuori orario";
+    text = "Attivo, in attesa della prossima fascia oraria.";
+  } else {
+    pill.className = "pill ok"; pill.textContent = "Attivo";
+    text = status.next_play_at ? `Prossimo verso tra circa ${fmtDur(status.next_play_at - status.server_time)}` : "In preparazione…";
+  }
+  if (status.sound_count === 0) text += " Nessun suono caricato.";
+  $("statusText").textContent = text;
+  $("btnToggle").textContent = status.enabled ? "Disattiva automatico" : "Attiva automatico";
+  $("btnStop").disabled = !status.playing;
+  $("btnRandom").disabled = !!status.playing || status.sound_count === 0;
+
+  const st = status.stats;
+  $("sToday").textContent = st.today; $("sWeek").textContent = st.week;
+  $("sTotal").textContent = st.total; $("sErr").textContent = st.errors_today;
+  const max = Math.max(1, ...st.hourly_week);
+  $("chart").innerHTML = st.hourly_week.map((c, h) =>
+    `<div title="${h}:00 – ${c} riproduzioni" style="height:${(c / max) * 100}%"></div>`).join("");
+}
+
+// --- suoni ---
+async function loadSounds() {
+  const list = await api("/api/sounds");
+  $("noSounds").hidden = list.length > 0;
+  $("soundList").innerHTML = list.map(s => {
+    const n = encodeURIComponent(s.name);
+    return `<tr>
+      <td><input type="checkbox" data-toggle="${esc(s.name)}" ${s.enabled ? "checked" : ""} title="Incluso nella riproduzione automatica"></td>
+      <td class="name">${esc(s.name)}<div class="muted" style="font-size:12px">${(s.size / 1024 / 1024).toFixed(2)} MB</div></td>
+      <td class="hide-sm"><audio controls preload="none" src="/api/sounds/${n}/file"></audio></td>
+      <td class="hide-sm">${s.plays}</td>
+      <td style="white-space:nowrap">
+        <button class="small" data-play="${esc(s.name)}" title="Riproduci sulle cuffie del Raspberry">▶ Pi</button>
+        <button class="small danger" data-del="${esc(s.name)}" title="Elimina">🗑</button>
+      </td></tr>`;
+  }).join("");
+}
+
+$("soundList").addEventListener("click", async (e) => {
+  const play = e.target.dataset.play, del = e.target.dataset.del;
+  try {
+    if (play) { await api("/api/play", jsonOpts("POST", { name: play })); toast("In riproduzione: " + play); loadStatus(); }
+    if (del && confirm(`Eliminare "${del}"?`)) {
+      await api("/api/sounds/" + encodeURIComponent(del), { method: "DELETE" });
+      toast("Eliminato"); loadSounds(); loadStatus();
+    }
+  } catch (err) { toast(err.message); }
+});
+$("soundList").addEventListener("change", async (e) => {
+  const name = e.target.dataset.toggle;
+  if (!name) return;
+  try { await api("/api/sounds/" + encodeURIComponent(name), jsonOpts("PATCH", { enabled: e.target.checked })); }
+  catch (err) { toast(err.message); e.target.checked = !e.target.checked; }
+});
+
+async function upload(files) {
+  if (!files.length) return;
+  const fd = new FormData();
+  for (const f of files) fd.append("files", f);
+  $("uploadMsg").textContent = "Caricamento…";
+  try {
+    const r = await api("/api/sounds", { method: "POST", body: fd });
+    $("uploadMsg").innerHTML =
+      (r.saved.length ? `Caricati: ${r.saved.map(esc).join(", ")}` : "") +
+      r.errors.map(e => `<div class="err">${esc(e)}</div>`).join("");
+    loadSounds(); loadStatus();
+  } catch (err) { $("uploadMsg").innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+}
+$("fileInput").addEventListener("change", (e) => { upload(e.target.files); e.target.value = ""; });
+const drop = $("drop");
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", (e) => upload(e.dataTransfer.files));
+
+// --- impostazioni ---
+function renderWindows() {
+  $("windows").innerHTML = config.windows.map((w, i) => `
+    <div class="row">dalle <input type="time" data-w="${i}" data-k="start" value="${w.start}" required>
+    alle <input type="time" data-w="${i}" data-k="end" value="${w.end}" required>
+    <button type="button" class="small danger" data-rmw="${i}">Rimuovi</button></div>`).join("")
+    || `<div class="muted">Nessuna fascia: il dissuasore non suonerà in automatico.</div>`;
+}
+$("windows").addEventListener("input", (e) => { const i = e.target.dataset.w; if (i !== undefined) config.windows[i][e.target.dataset.k] = e.target.value; });
+$("windows").addEventListener("click", (e) => { const i = e.target.dataset.rmw; if (i !== undefined) { config.windows.splice(i, 1); renderWindows(); } });
+$("addWindow").onclick = () => { config.windows.push({ start: "06:00", end: "20:00" }); renderWindows(); };
+
+async function loadConfig() {
+  config = await api("/api/config");
+  renderWindows();
+  $("days").innerHTML = DAYS.map((d, i) =>
+    `<label><input type="checkbox" value="${i}" ${config.days.includes(i) ? "checked" : ""}>${d}</label>`).join("");
+  $("minInt").value = +(config.min_interval_sec / 60).toFixed(2);
+  $("maxInt").value = +(config.max_interval_sec / 60).toFixed(2);
+  $("volume").value = config.volume; $("volLabel").textContent = config.volume + "%";
+  $("maxPlay").value = config.max_play_sec;
+  $("device").value = config.audio_device;
+  $("mixer").value = config.mixer_control;
+  $("mixerCard").value = config.mixer_card;
+}
+$("volume").addEventListener("input", (e) => $("volLabel").textContent = e.target.value + "%");
+
+$("cfgForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = {
+    windows: config.windows,
+    days: [...$("days").querySelectorAll("input:checked")].map(x => +x.value),
+    min_interval_sec: Math.round(+$("minInt").value * 60),
+    max_interval_sec: Math.round(+$("maxInt").value * 60),
+    volume: +$("volume").value,
+    max_play_sec: +$("maxPlay").value || 0,
+    audio_device: $("device").value.trim() || "default",
+    mixer_control: $("mixer").value.trim() || "PCM",
+    mixer_card: $("mixerCard").value.trim() || "0",
+  };
+  try { await api("/api/config", jsonOpts("PUT", body)); toast("Impostazioni salvate"); loadConfig(); loadStatus(); }
+  catch (err) { toast("Errore: " + err.message); }
+});
+
+$("btnTest").onclick = async () => {
+  try {
+    const r = await api("/api/test-audio", { method: "POST" });
+    let msg = r.ok ? "Beep inviato alle cuffie" : "Errore audio: " + r.error;
+    if (r.mixer_error) msg += " (volume non impostato: " + r.mixer_error + ")";
+    toast(msg);
+  } catch (err) { toast(err.message); }
+};
+$("btnDevices").onclick = async () => {
+  const r = await api("/api/devices");
+  $("devices").hidden = false; $("devices").textContent = r.output;
+};
+
+// --- comandi ---
+$("btnRandom").onclick = async () => {
+  try { const r = await api("/api/play", jsonOpts("POST", {})); toast("In riproduzione: " + r.sound); loadStatus(); }
+  catch (err) { toast(err.message); }
+};
+$("btnStop").onclick = async () => { await api("/api/stop", { method: "POST" }); setTimeout(refresh, 300); };
+$("btnToggle").onclick = async () => {
+  await api("/api/config", jsonOpts("PUT", { enabled: !status.enabled }));
+  loadStatus();
+};
+
+// --- registro ---
+async function loadLog() {
+  const rows = await api("/api/log?limit=50");
+  $("log").innerHTML = rows.map(r => `<tr>
+    <td>${fmtTime(r.ts)}</td><td style="word-break:break-all">${esc(r.sound)}</td><td>${esc(r.trigger)}</td>
+    <td>${r.ok ? `✓ ${r.duration ?? ""} s` : `<span class="err" title="${esc(r.error || "")}">✗ ${esc((r.error || "").slice(0, 60))}</span>`}</td>
+  </tr>`).join("") || `<tr><td colspan="4" class="muted">Ancora nessuna riproduzione.</td></tr>`;
+}
+$("btnClearLog").onclick = async () => {
+  if (!confirm("Svuotare il registro e le statistiche?")) return;
+  await api("/api/log", { method: "DELETE" }); refresh(); loadSounds();
+};
+
+function refresh() { loadStatus(); loadLog(); }
+loadConfig(); loadSounds(); refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>
