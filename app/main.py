@@ -8,7 +8,11 @@ import secrets
 import socket
 import struct
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 import wave
+from email.message import Message
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
@@ -167,14 +171,60 @@ async def upload(files: list[UploadFile] = File(...)):
         if len(data) > MAX_UPLOAD_MB * 1024 * 1024:
             errors.append(f"{f.filename}: file troppo grande (max {MAX_UPLOAD_MB} MB)")
             continue
-        dest = store.sounds_dir / name
-        n = 1
-        while dest.exists():
-            dest = store.sounds_dir / f"{Path(name).stem}-{n}{Path(name).suffix}"
-            n += 1
-        dest.write_bytes(data)
-        saved.append(dest.name)
+        saved.append(_save_sound(name, data))
     return {"saved": saved, "errors": errors}
+
+
+def _save_sound(name: str, data: bytes) -> str:
+    dest = store.sounds_dir / name
+    n = 1
+    while dest.exists():
+        dest = store.sounds_dir / f"{Path(name).stem}-{n}{Path(name).suffix}"
+        n += 1
+    dest.write_bytes(data)
+    return dest.name
+
+
+AUDIO_TYPES = {"audio/mpeg": ".mp3", "audio/mp3": ".mp3", "audio/wav": ".wav", "audio/x-wav": ".wav",
+               "audio/wave": ".wav", "audio/ogg": ".ogg", "application/ogg": ".ogg"}
+
+
+class UrlRequest(BaseModel):
+    url: str
+
+
+@app.post("/api/sounds/from-url")
+def upload_from_url(req: UrlRequest):
+    """Scarica un file audio da un link diretto (es. il download di xeno-canto)."""
+    url = req.url.strip()
+    # Pagina di una registrazione xeno-canto -> link di download
+    m = re.fullmatch(r"https?://(www\.)?xeno-canto\.org/(\d+)/?", url)
+    if m:
+        url = f"https://xeno-canto.org/{m.group(2)}/download"
+    if urllib.parse.urlparse(url).scheme not in ("http", "https"):
+        raise HTTPException(400, "Il link deve iniziare con http:// o https://")
+    limit = MAX_UPLOAD_MB * 1024 * 1024
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": "dissuasore-piccioni"})
+        with urllib.request.urlopen(request, timeout=30) as resp:
+            ctype = resp.headers.get_content_type()
+            disposition = resp.headers.get("Content-Disposition", "")
+            final_url = resp.geturl()
+            data = resp.read(limit + 1)
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        raise HTTPException(400, f"Download non riuscito: {getattr(e, 'reason', e)}")
+    if len(data) > limit:
+        raise HTTPException(400, f"File troppo grande (max {MAX_UPLOAD_MB} MB)")
+    msg = Message()
+    msg["Content-Disposition"] = disposition
+    name = msg.get_filename() or urllib.parse.unquote(Path(urllib.parse.urlparse(final_url).path).name)
+    name = _safe_name(name or "suono")
+    if Path(name).suffix not in SUPPORTED:
+        ext = AUDIO_TYPES.get(ctype)
+        if not ext:
+            raise HTTPException(400, "Il link non porta a un file audio mp3, wav o ogg")
+        name = _safe_name(Path(name).stem + ext)
+    return {"saved": [_save_sound(name, data)], "errors": []}
 
 
 @app.get("/api/sounds/{name}/file")

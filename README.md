@@ -1,6 +1,6 @@
 # 🦅 Dissuasore piccioni
 
-App Docker per Raspberry Pi che riproduce versi di uccelli predatori (falco, poiana, gufo…) dall'uscita cuffie, a intervalli casuali e nelle fasce orarie che scegli. Si controlla da un'interfaccia web.
+App Docker per Raspberry Pi che riproduce versi di uccelli predatori (falco pellegrino, astore, gufo reale…) dall'uscita cuffie, a intervalli casuali e nelle fasce orarie che scegli. Si controlla da un'interfaccia web.
 
 ## Cosa fa
 
@@ -77,7 +77,9 @@ Se l'audio esce dall'HDMI invece che dalle cuffie, usa `sudo raspi-config` → *
 
 ## Dove trovare i versi
 
-Cerca registrazioni di falco pellegrino, poiana, astore, gufo reale o gabbiano reale su siti con licenze libere, ad esempio [xeno-canto.org](https://xeno-canto.org) (controlla la licenza di ogni file) o Freesound. File brevi (5-20 secondi) e diversi tra loro funzionano meglio.
+Cerca registrazioni di falco pellegrino (Falco peregrinus), astore (Accipiter gentilis), gufo reale (Bubo bubo) e sparviere (Accipiter nisus), più il richiamo d'allarme del piccione (Columba livia, "alarm call"), su siti con licenze libere, ad esempio [xeno-canto.org](https://xeno-canto.org) (controlla la licenza di ogni file) o Freesound. File brevi (5-20 secondi) e diversi tra loro funzionano meglio.
+
+Nell'interfaccia puoi anche incollare il link di una registrazione xeno-canto (per esempio `https://xeno-canto.org/123456`) o un link diretto a un file mp3/wav/ogg e premere **Aggiungi da link**: il Pi scarica il file da solo.
 
 ## Protezione con password
 
@@ -108,7 +110,7 @@ L'interfaccia usa un'API JSON che puoi chiamare anche da Home Assistant o da scr
 - `GET /api/status`: stato e statistiche
 - `POST /api/play` con `{"name": "falco.mp3"}` oppure `{}` per un verso casuale
 - `POST /api/stop`
-- `GET /api/sounds`, `POST /api/sounds` (multipart, campo `files`), `DELETE /api/sounds/{nome}`
+- `GET /api/sounds`, `POST /api/sounds` (multipart, campo `files`), `POST /api/sounds/from-url` con `{"url": "..."}`, `DELETE /api/sounds/{nome}`
 - `GET /api/config`, `PUT /api/config` (per esempio `{"enabled": false}`)
 - `GET /api/log`
 

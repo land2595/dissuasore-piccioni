@@ -112,12 +112,16 @@
         <input type="file" id="fileInput" accept=".mp3,.wav,.ogg,audio/*" multiple hidden>
       </label>
     </div>
+    <form class="row" id="urlForm" style="margin-top:10px">
+      <input type="url" id="urlInput" placeholder="Oppure incolla un link (es. https://xeno-canto.org/123456)" style="flex:1;min-width:200px" required>
+      <button type="submit">Aggiungi da link</button>
+    </form>
     <div id="uploadMsg" style="margin-top:8px"></div>
     <table class="sounds" style="margin-top:8px">
       <thead><tr><th>Attivo</th><th>Nome</th><th class="hide-sm">Anteprima</th><th class="hide-sm">Volte</th><th></th></tr></thead>
       <tbody id="soundList"></tbody>
     </table>
-    <p id="noSounds" class="muted" hidden>Nessun suono caricato. Aggiungi qualche verso di falco, poiana, gufo o gabbiano.</p>
+    <p id="noSounds" class="muted" hidden>Nessun suono caricato. Aggiungi qualche verso di falco pellegrino, astore o gufo reale.</p>
   </section>
 
   <section class="card">
@@ -277,6 +281,16 @@ async function upload(files) {
     loadSounds(); loadStatus();
   } catch (err) { $("uploadMsg").innerHTML = `<span class="err">${esc(err.message)}</span>`; }
 }
+$("urlForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("uploadMsg").textContent = "Download in corso…";
+  try {
+    const r = await api("/api/sounds/from-url", jsonOpts("POST", { url: $("urlInput").value }));
+    $("uploadMsg").textContent = "Aggiunto: " + r.saved.join(", ");
+    $("urlInput").value = "";
+    loadSounds(); loadStatus();
+  } catch (err) { $("uploadMsg").innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+});
 $("fileInput").addEventListener("change", (e) => { upload(e.target.files); e.target.value = ""; });
 const drop = $("drop");
 ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
