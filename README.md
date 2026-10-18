@@ -79,6 +79,8 @@ Se l'audio esce dall'HDMI invece che dalle cuffie, usa `sudo raspi-config` → *
 
 Cerca registrazioni di falco pellegrino, poiana, astore, gufo reale o gabbiano reale su siti con licenze libere, ad esempio [xeno-canto.org](https://xeno-canto.org) (controlla la licenza di ogni file) o Freesound. File brevi (5-20 secondi) e diversi tra loro funzionano meglio.
 
+Nell'interfaccia puoi anche incollare il link di una registrazione xeno-canto (per esempio `https://xeno-canto.org/123456`) o un link diretto a un file mp3/wav/ogg e premere **Aggiungi da link**: il Pi scarica il file da solo.
+
 ## Protezione con password
 
 In `docker-compose.yml` togli il commento a `WEB_USER` e `WEB_PASSWORD`, scegli le credenziali e riavvia con `docker compose up -d`. Il browser chiederà utente e password. Non esporre la porta 8080 su Internet senza password.
@@ -108,7 +110,7 @@ L'interfaccia usa un'API JSON che puoi chiamare anche da Home Assistant o da scr
 - `GET /api/status`: stato e statistiche
 - `POST /api/play` con `{"name": "falco.mp3"}` oppure `{}` per un verso casuale
 - `POST /api/stop`
-- `GET /api/sounds`, `POST /api/sounds` (multipart, campo `files`), `DELETE /api/sounds/{nome}`
+- `GET /api/sounds`, `POST /api/sounds` (multipart, campo `files`), `POST /api/sounds/from-url` con `{"url": "..."}`, `DELETE /api/sounds/{nome}`
 - `GET /api/config`, `PUT /api/config` (per esempio `{"enabled": false}`)
 - `GET /api/log`
 
