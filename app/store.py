@@ -11,8 +11,15 @@ DEFAULT_CONFIG = {
     "windows": [{"start": "06:00", "end": "20:00"}],
     # Giorni attivi: 0 = lunedì ... 6 = domenica
     "days": [0, 1, 2, 3, 4, 5, 6],
-    "min_interval_sec": 300,
-    "max_interval_sec": 900,
+    # Pausa tra una sessione e l'altra (o tra un verso e l'altro se la sessione è 0)
+    "min_interval_sec": 1800,
+    "max_interval_sec": 5400,
+    # Sessione: per quanto tempo continuano i versi, e pausa tra un verso e l'altro dentro la sessione.
+    # Con session_max_sec = 0 ogni volta suona un solo verso.
+    "session_min_sec": 300,
+    "session_max_sec": 600,
+    "gap_min_sec": 20,
+    "gap_max_sec": 60,
     "volume": 80,
     "audio_device": "plughw:CARD=Headphones,DEV=0",
     "mixer_control": "PCM",
