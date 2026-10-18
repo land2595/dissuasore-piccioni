@@ -68,6 +68,13 @@ speaker-test -D plughw:CARD=Headphones,DEV=0 -c 2 -t wav -l 1
 
 Se l'audio esce dall'HDMI invece che dalle cuffie, usa `sudo raspi-config` → *System Options* → *Audio* e scegli *Headphones*. L'app comunque usa il dispositivo indicato nelle impostazioni.
 
+## Problemi noti
+
+**Il container si chiude subito con `PermissionError: [Errno 1] Operation not permitted`** (in `time.get_clock_info`). Capita su Raspberry Pi OS a 32 bit quando Docker o `libseccomp2` sono troppo vecchi e bloccano le chiamate di sistema dell'orologio a 64 bit. Soluzioni:
+
+1. Consigliata: aggiorna con `sudo apt update && sudo apt install --only-upgrade libseccomp2 docker-ce` (serve libseccomp2 2.4.4 o più recente; su Buster non c'è, meglio passare a Bookworm).
+2. Rapida: in `docker-compose.yml` togli il commento a `security_opt: - seccomp:unconfined` e riavvia.
+
 ## Dove trovare i versi
 
 Cerca registrazioni di falco pellegrino, poiana, astore, gufo reale o gabbiano reale su siti con licenze libere, ad esempio [xeno-canto.org](https://xeno-canto.org) (controlla la licenza di ogni file) o Freesound. File brevi (5-20 secondi) e diversi tra loro funzionano meglio.
