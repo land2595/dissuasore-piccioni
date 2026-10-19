@@ -18,6 +18,8 @@ services:
       - audio
     volumes:
       - ./data:/data              # suoni, impostazioni e registro restano qui
+      # Solo per casse bluetooth (vedi README, "Casse bluetooth"): togli il commento
+      # - /run/dbus:/run/dbus:ro
     environment:
       - TZ=Europe/Rome            # le fasce orarie usano questo fuso
       # Protezione con password (facoltativa): togli il commento e scegli le credenziali

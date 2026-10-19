@@ -60,7 +60,10 @@ class Player:
         cfg = self.store.get_config()
         if DRY_RUN or not shutil.which("amixer"):
             return None
-        cmd = ["amixer", "-q", "-c", str(cfg["mixer_card"]), "sset", cfg["mixer_control"], f"{int(percent)}%"]
+        card = str(cfg["mixer_card"])
+        # Le casse bluetooth (bluealsa) non sono una scheda: si indicano come dispositivo con -D
+        target = ["-D", card] if card.startswith("bluealsa") else ["-c", card]
+        cmd = ["amixer", "-q", *target, "sset", cfg["mixer_control"], f"{int(percent)}%"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
             msg = (r.stderr or r.stdout).strip()
