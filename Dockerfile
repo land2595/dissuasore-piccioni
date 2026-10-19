@@ -1,8 +1,10 @@
 # Immagine multi-architettura: funziona su Raspberry Pi 3 (linux/arm/v7 o linux/arm64) e su PC x86
 FROM python:3.11-slim-bookworm
 
+# libasound2-plugin-bluez: uscita verso casse bluetooth tramite bluealsa in esecuzione sul Pi
+
 RUN apt-get update \
- && apt-get install -y --no-install-recommends alsa-utils mpg123 vorbis-tools \
+ && apt-get install -y --no-install-recommends alsa-utils mpg123 vorbis-tools libasound2-plugin-bluez \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /srv

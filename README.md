@@ -76,6 +76,46 @@ Se l'audio esce dall'HDMI invece che dalle cuffie, usa `sudo raspi-config` → *
 1. Consigliata: aggiorna con `sudo apt update && sudo apt install --only-upgrade libseccomp2 docker-ce` (serve libseccomp2 2.4.4 o più recente; su Buster non c'è, meglio passare a Bookworm).
 2. Rapida: in `docker-compose.yml` togli il commento a `security_opt: - seccomp:unconfined` e riavvia.
 
+## Casse bluetooth
+
+L'app può suonare su una cassa o soundbar bluetooth tramite **bluealsa**, che gira sul Pi (fuori da Docker). Serve Raspberry Pi OS **Bookworm** (o Bullseye) in versione *Lite*: nella versione con desktop il bluetooth audio è gestito da PipeWire/PulseAudio e va in conflitto. Su Buster non funziona: il suo bluealsa è troppo vecchio.
+
+1. Installa e avvia bluealsa sul Pi:
+
+   ```bash
+   sudo apt update && sudo apt install -y bluez bluez-alsa-utils
+   sudo systemctl enable --now bluetooth bluealsa
+   ```
+
+2. Metti la soundbar in modalità abbinamento e abbinala (sostituisci `XX:XX:XX:XX:XX:XX` con l'indirizzo che compare dopo `scan on`):
+
+   ```bash
+   bluetoothctl
+   power on
+   agent on
+   default-agent
+   scan on
+   pair XX:XX:XX:XX:XX:XX
+   trust XX:XX:XX:XX:XX:XX
+   connect XX:XX:XX:XX:XX:XX
+   quit
+   ```
+
+3. Prova dal Pi: `aplay -D bluealsa:DEV=XX:XX:XX:XX:XX:XX,PROFILE=a2dp /usr/share/sounds/alsa/Front_Center.wav`
+4. In `docker-compose.yml` togli il commento alla riga `- /run/dbus:/run/dbus:ro` e riavvia con `docker compose up -d`.
+5. Nelle **Impostazioni** dell'app:
+   - Dispositivo ALSA: `bluealsa:DEV=XX:XX:XX:XX:XX:XX,PROFILE=a2dp`
+   - Scheda mixer: `bluealsa`
+   - Controllo mixer: il nome mostrato da `amixer -D bluealsa scontrols` (per esempio `Soundbar A2DP`); se non lo trovi, regola il volume dalla soundbar e ignora l'avviso.
+
+   Poi premi **🔊 Prova audio**.
+
+**La soundbar si scollega?** Molte vanno in standby dopo qualche minuto di silenzio. Disattiva lo spegnimento automatico se la soundbar lo permette, e fai ricollegare il Pi da solo ogni minuto aggiungendo con `sudo crontab -e` la riga:
+
+```
+* * * * * bluetoothctl connect XX:XX:XX:XX:XX:XX >/dev/null 2>&1
+```
+
 ## Dove trovare i versi
 
 Cerca registrazioni di falco pellegrino (Falco peregrinus), astore (Accipiter gentilis), gufo reale (Bubo bubo) e sparviere (Accipiter nisus), più il richiamo d'allarme del piccione (Columba livia, "alarm call"), su siti con licenze libere, ad esempio [xeno-canto.org](https://xeno-canto.org) (controlla la licenza di ogni file) o Freesound. File brevi (5-20 secondi) e diversi tra loro funzionano meglio.
